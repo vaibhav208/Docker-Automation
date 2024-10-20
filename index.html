@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Docker Automation</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 text-gray-800">
+    <div class="container mx-auto p-8">
+        <h1 class="text-4xl font-bold mb-6 text-center">Docker Automation</h1>
+
+        <div class="bg-white shadow-md rounded-lg p-6 mb-8">
+            <h2 class="text-2xl font-semibold mb-4">Pull Docker Image</h2>
+            <form id="pullForm" class="space-y-4">
+                <div>
+                    <label for="pullDockerImage" class="block font-medium">Docker Image</label>
+                    <input type="text" id="pullDockerImage" class="w-full p-2 border rounded-lg" placeholder="Enter Docker Image (e.g., nginx:latest)" required>
+                </div>
+                <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-lg">Pull Docker Image</button>
+            </form>
+            <p id="pullResult" class="mt-4 text-green-500"></p>
+        </div>
+
+        <div class="bg-white shadow-md rounded-lg p-6 mb-8">
+            <h2 class="text-2xl font-semibold mb-4">Launch Docker Container</h2>
+            <form id="launchForm" class="space-y-4">
+                <div>
+                    <label for="dockerImage" class="block font-medium">Docker Image</label>
+                    <input type="text" id="dockerImage" class="w-full p-2 border rounded-lg" placeholder="Enter Docker Image (e.g., nginx)" required>
+                </div>
+                <div>
+                    <label for="containerName" class="block font-medium">Container Name</label>
+                    <input type="text" id="containerName" class="w-full p-2 border rounded-lg" placeholder="Enter Container Name" required>
+                </div>
+                <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-lg">Launch Container</button>
+            </form>
+            <p id="launchResult" class="mt-4 text-green-500"></p>
+        </div>
+
+        <div class="bg-white shadow-md rounded-lg p-6 mb-8">
+            <h2 class="text-2xl font-semibold mb-4">Docker Information</h2>
+            <div class="flex space-x-4">
+                <button id="listImagesBtn" class="bg-green-500 text-white px-4 py-2 rounded-lg">List Docker Images</button>
+                <button id="listContainersBtn" class="bg-yellow-500 text-white px-4 py-2 rounded-lg">List Running Containers</button>
+                <button id="listVolumesBtn" class="bg-purple-500 text-white px-4 py-2 rounded-lg">List Docker Volumes</button>
+                <button id="listNetworksBtn" class="bg-indigo-500 text-white px-4 py-2 rounded-lg">List Docker Networks</button>
+            </div>
+            <pre id="dockerInfo" class="bg-gray-100 p-4 mt-4 rounded-lg"></pre>
+        </div>
+
+        <div class="bg-white shadow-md rounded-lg p-6 mb-8">
+            <h2 class="text-2xl font-semibold mb-4">Manage Docker Containers</h2>
+            <form id="manageForm" class="space-y-4">
+                <div>
+                    <label for="manageContainerName" class="block font-medium">Container Name</label>
+                    <input type="text" id="manageContainerName" class="w-full p-2 border rounded-lg" placeholder="Enter Container Name" required>
+                </div>
+                <div class="flex space-x-4">
+                    <button id="stopContainerBtn" class="bg-red-500 text-white px-4 py-2 rounded-lg">Stop Container</button>
+                    <button id="removeContainerBtn" class="bg-red-700 text-white px-4 py-2 rounded-lg">Remove Container</button>
+                </div>
+            </form>
+            <p id="manageResult" class="mt-4 text-red-500"></p>
+        </div>
+    </div>
+
+    <script>
+        const publicIp = '65.1.148.205:8080';
+
+        // Pull Docker Image
+        document.getElementById('pullForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const dockerImage = document.getElementById('pullDockerImage').value;
+
+            const response = await fetch(`http://${publicIp}/pull`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ docker_image: dockerImage })
+            });
+
+            const result = await response.json();
+            document.getElementById('pullResult').textContent = result.message || result.error;
+        });
+
+        // Launch Container
+        document.getElementById('launchForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const dockerImage = document.getElementById('dockerImage').value;
+            const containerName = document.getElementById('containerName').value;
+
+            const response = await fetch(`http://${publicIp}/launch`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ docker_image: dockerImage, container_name: containerName })
+            });
+
+            const result = await response.json();
+            document.getElementById('launchResult').textContent = result.message || result.error;
+        });
+
+        // List Docker Info (Images, Containers, Volumes, Networks)
+        const buttons = [
+            { id: 'listImagesBtn', endpoint: '/images' },
+            { id: 'listContainersBtn', endpoint: '/containers' },
+            { id: 'listVolumesBtn', endpoint: '/volumes' },
+            { id: 'listNetworksBtn', endpoint: '/networks' }
+        ];
+
+        buttons.forEach(btn => {
+            document.getElementById(btn.id).addEventListener('click', async () => {
+                const response = await fetch(`http://${publicIp}${btn.endpoint}`);
+                const result = await response.json();
+                document.getElementById('dockerInfo').textContent = JSON.stringify(result, null, 2);
+            });
+        });
+
+        // Manage Container (Stop/Remove)
+        document.getElementById('stopContainerBtn').addEventListener('click', async (e) => {
+            e.preventDefault();
+            const containerName = document.getElementById('manageContainerName').value;
+
+            const response = await fetch(`http://${publicIp}/stop`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ container_name: containerName })
+            });
+
+            const result = await response.json();
+            document.getElementById('manageResult').textContent = result.message || result.error;
+        });
+
+        document.getElementById('removeContainerBtn').addEventListener('click', async (e) => {
+            e.preventDefault();
+            const containerName = document.getElementById('manageContainerName').value;
+
+            const response = await fetch(`http://${publicIp}/remove`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ container_name: containerName })
+            });
+
+            const result = await response.json();
+            document.getElementById('manageResult').textContent = result.message || result.error;
+        });
+    </script>
+</body>
+</html>
