@@ -1,0 +1,4 @@
+Flask==2.3.2
+Flask-CORS==3.1.0
+
+NOTE : You have to change IP in frontend JS as I have given My temporary public IP there.
